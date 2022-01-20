@@ -1,3 +1,4 @@
+#pragma once
 #ifndef WGSIZE
 #define WGSIZE 4
 #endif

@@ -5,12 +5,14 @@ SHELL := bash
 
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
-# -------
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin
 
-ifndef COMPILER
-$(warning COMPILER not set (use ARM, CLANG, CRAY, FUIJTSU, GNU, or INTEL))
-COMPILER=GNU
-endif
+OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
+MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
+OPENMP_LIB ?= $(CLANG_PATH)/../lib/libomp.so
+
+# -------
 
 WGSIZE = 64
 ARCH   = native
@@ -38,35 +40,33 @@ endif
 
 # -------
 
-CC_ARM     = armclang
-CC_CLANG   = clang
-CC_CRAY    = cc
-CC_FUJITSU = fcc
-CC_GNU     = gcc
-CC_INTEL   = icc
-CC = $(CC_$(COMPILER))
+CC = $(CLANG_PATH)/clang
 
-CFLAGS_ARM     = -std=c99 -Wall -Ofast -ffast-math -fopenmp -fsimdmath -$(ARCHFLAG)=$(ARCH)
-CFLAGS_CLANG   = -std=c99 -Wall -Ofast -ffast-math -fopenmp -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512)
-CFLAGS_CRAY    = -O3 -homp -hfp4 -haggress -hflex_mp=tolerant -hvector3 -hscalar3 -Gfast
-CFLAGS_FUJITSU = -Nclang -std=c99 -Wall -Ofast -ffast-math -fopenmp -$(ARCHFLAG)=$(ARCH) -mllvm -force-vector-interleave=4
-CFLAGS_GNU     = -std=c99 -Wall -Ofast -ffast-math -fopenmp -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512)
-CFLAGS_INTEL   = -std=c99 -Wall -Ofast -ffast-math -fopenmp -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-qopt-zmm-usage=high)
-CFLAGS = $(CFLAGS_$(COMPILER)) -DWGSIZE=$(WGSIZE)
+CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -fopenmp -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH)
 
 LDFLAGS = -lm
 
 
 # -------
 
-EXE = bude
-
 .PHONY: all $(EXE) clean
 
-all: $(EXE)
+all: omp-single-forward.exe ser-single-forward.exe omp-single-gradient.exe ser-single-gradient.exe
 
-$(EXE): bude.c bude.h vec-pose-inner.c
-	$(CC) $(CFLAGS) bude.c vec-pose-inner.c -o $@ $(LDFLAGS) $(EXTRA_FLAGS)
+# all: omp-single-forward.exe omp-single-gradient.exe
+
+ser-single-forward.exe: $(SOURCES2.0)
+	time $(CC) bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1
+
+omp-single-forward.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1
+
+ser-single-gradient.exe: $(SOURCES2.0)
+	time $(CC) bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB)
+
+omp-single-gradient.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB)
 
 clean:
-	rm -f $(EXE)
+	rm -f omp-single-forward.exe ser-single-gradient.exe omp-single-gradient.exe omp-mpi-gradient.exe
+

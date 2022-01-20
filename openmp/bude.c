@@ -6,7 +6,7 @@
 #include <sys/time.h>
 
 #include "bude.h"
-
+#include "vec-pose-inner.c"
 struct
 {
   int    natlig;
@@ -21,6 +21,10 @@ struct
   int iterations;
 
 } params = {0};
+
+void __enzyme_autodiff(void*, ...);
+int enzyme_const;
+int enzyme_dup;
 
 double   getTimestamp();
 void     loadParameters(int argc, char *argv[]);
@@ -102,6 +106,21 @@ int main(int argc, char *argv[])
   freeParameters();
 }
 
+void compute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__restrict__ poses[6], float* __restrict__ buffer, FFParams* __restrict forcefield) {
+#pragma omp parallel
+  for (int itr = 0; itr < params.iterations; itr++)
+  {
+#pragma omp for
+    for (unsigned group = 0; group < (params.nposes/WGSIZE); group++)
+    {
+      fasten_main(params.natlig, params.natpro, protein, ligand,
+                  poses[0], poses[1], poses[2],
+                  poses[3], poses[4], poses[5],
+                  buffer, forcefield, group);
+    }
+  }
+}
+
 void runOpenMP(float *restrict results)
 {
   printf("\nRunning C/OpenMP\n");
@@ -154,20 +173,22 @@ void runOpenMP(float *restrict results)
     }
 
   double start = getTimestamp();
-
-#pragma omp parallel
-  for (int itr = 0; itr < params.iterations; itr++)
-  {
-#pragma omp for
-    for (unsigned group = 0; group < (params.nposes/WGSIZE); group++)
-    {
-      fasten_main(params.natlig, params.natpro, protein, ligand,
-                  poses[0], poses[1], poses[2],
-                  poses[3], poses[4], poses[5],
-                  buffer, forcefield, group);
-    }
-  }
-
+#ifdef FORWARD
+  compute(protein, ligand, poses, buffer, forcefield);
+#else
+  __enzyme_autodiff((void*)compute,
+                    enzyme_const,
+                    protein, 
+                    enzyme_const,
+                    ligand, 
+                    enzyme_const,
+                    poses, 
+                    enzyme_const,
+                    buffer, 
+                    enzyme_const,
+                    forcefield
+                    );
+#endif
   double end = getTimestamp();
 
   memcpy(results, buffer, sizeof(float) * params.nposes);
