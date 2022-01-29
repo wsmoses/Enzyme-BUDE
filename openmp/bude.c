@@ -7,7 +7,7 @@
 
 #include "bude.h"
 #include "vec-pose-inner.c"
-struct
+static struct
 {
   int    natlig;
   int    natpro;
@@ -107,11 +107,13 @@ int main(int argc, char *argv[])
 }
 
 void compute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__restrict__ poses[6], float* __restrict__ buffer, FFParams* __restrict forcefield) {
+    int iters = params.iterations;
+    int npose = params.nposes;
 #pragma omp parallel
-  for (int itr = 0; itr < params.iterations; itr++)
+  for (int itr = 0; itr < iters; itr++)
   {
 #pragma omp for
-    for (unsigned group = 0; group < (params.nposes/WGSIZE); group++)
+    for (unsigned group = 0; group < (npose/WGSIZE); group++)
     {
       fasten_main(params.natlig, params.natpro, protein, ligand,
                   poses[0], poses[1], poses[2],
@@ -119,6 +121,18 @@ void compute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__rest
                   buffer, forcefield, group);
     }
   }
+}
+
+void onecompute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__restrict__ poses[6], float* __restrict__ buffer, FFParams* __restrict forcefield) {
+    int npose = params.nposes;
+#pragma omp parallel for
+    for (unsigned group = 0; group < (npose/WGSIZE); group++)
+    {
+      fasten_main(params.natlig, params.natpro, protein, ligand,
+                  poses[0], poses[1], poses[2],
+                  poses[3], poses[4], poses[5],
+                  buffer, forcefield, group);
+    }
 }
 
 void runOpenMP(float *restrict results)
@@ -129,9 +143,15 @@ void runOpenMP(float *restrict results)
 
   float    *restrict poses[6];
   Atom     *restrict protein = malloc(sizeof(Atom) * params.natpro);
+#ifndef FORWARD
+  Atom     *restrict d_protein = calloc(sizeof(Atom), params.natpro);
+#endif
   Atom     *restrict ligand = malloc(sizeof(Atom) * params.natlig);
   FFParams *restrict forcefield = malloc(sizeof(FFParams) * params.ntypes);
   float    *restrict buffer = malloc(sizeof(float) * params.nposes);
+#ifndef FORWARD
+  float    *restrict d_buffer = calloc(sizeof(float), params.nposes);
+#endif
 
   for(int p = 0; p < 6; p++){
     poses[p] = malloc(sizeof(float) * params.nposes);
@@ -172,19 +192,23 @@ void runOpenMP(float *restrict results)
                   buffer, forcefield, group);
     }
 
+    int iters = params.iterations;
   double start = getTimestamp();
 #ifdef FORWARD
-  compute(protein, ligand, poses, buffer, forcefield);
+
+  for (int itr = 0; itr < iters; itr++)
+    onecompute(protein, ligand, poses, buffer, forcefield);
 #else
-  __enzyme_autodiff((void*)compute,
-                    enzyme_const,
-                    protein, 
+  for (int itr = 0; itr < iters; itr++)
+  __enzyme_autodiff((void*)onecompute,
+                    enzyme_dup,
+                    protein, d_protein,
                     enzyme_const,
                     ligand, 
                     enzyme_const,
                     poses, 
-                    enzyme_const,
-                    buffer, 
+                    enzyme_dup,
+                    buffer, d_buffer,
                     enzyme_const,
                     forcefield
                     );
