@@ -29,18 +29,30 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
     etotals,
   )
 
-  d_protein = fill!(similar(deck.protein), Atom(0f0, 0f0, 0f0, 0))
-  d_etotals = fill!(similar(etotals), 0)
-
-  elapsed = @elapsed for _ = 1:params.iterations
-    autodiff(fasten_main, Const,
-      Val(convert(Int, params.wgsize)),
-      Duplicated(deck.protein, d_protein),
-      Const(deck.ligand),
-      Const(deck.forcefield),
-      Const(deck.poses),
-      Duplicated(etotals, d_etotals)
-    )
+  if params.enzyme
+    d_protein = fill!(similar(deck.protein), Atom(0f0, 0f0, 0f0, 0))
+    d_etotals = fill!(similar(etotals), 0)
+    elapsed = @elapsed for _ = 1:params.iterations
+      autodiff(fasten_main, Const,
+        Val(convert(Int, params.wgsize)),
+        Duplicated(deck.protein, d_protein),
+        Const(deck.ligand),
+        Const(deck.forcefield),
+        Const(deck.poses),
+        Duplicated(etotals, d_etotals)
+      )
+    end
+  else
+    elapsed = @elapsed for _ = 1:params.iterations
+      fasten_main(
+        Val(convert(Int, params.wgsize)),
+        deck.protein,
+        deck.ligand,
+        deck.forcefield,
+        deck.poses,
+        etotals,
+      )
+    end
   end
 
   

@@ -69,6 +69,7 @@ end
   wgsize::UInt = DefaultWGSize
   ppwi::UInt = DefaultPPWI
   deck::String = "../data/bm1"
+  enzyme::Bool = false
 end
 
 struct Deck
@@ -110,6 +111,10 @@ function parse_options(given::Params)
     help = "Use the DECK directory as input deck"
     arg_type = String
     default = given.deck
+    "--enzyme"
+    help = "Use the enzyme"
+    arg_type = Bool
+    default = false
   end
   args = parse_args(s)
   # surely there's a better way than doing this:
