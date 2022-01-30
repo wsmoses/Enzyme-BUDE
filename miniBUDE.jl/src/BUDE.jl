@@ -159,7 +159,6 @@ function main()
   params::Params = Params()
   parse_options(params)
 
-
   ds = devices()
 
   if params.list
