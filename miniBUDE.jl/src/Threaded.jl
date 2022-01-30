@@ -2,6 +2,8 @@ include("BUDE.jl")
 using StaticArrays
 using Enzyme
 
+Enzyme.API.printperf!(true)
+
 const Device = (undef, "CPU", "Threaded")
 
 function devices()
@@ -19,19 +21,30 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
   poses = size(deck.poses)[2]
   etotals = Array{Float32}(undef, poses)
 
+  d_protein = fill!(similar(deck.protein), Atom(0f0, 0f0, 0f0, 0))
+  d_etotals = fill!(similar(etotals), 0)
   # warmup
-  fasten_main(
-    Val(convert(Int, params.wgsize)),
-    deck.protein,
-    deck.ligand,
-    deck.forcefield,
-    deck.poses,
-    etotals,
-  )
+  if params.enzyme
+     @time autodiff(fasten_main, Const,
+        Val(convert(Int, params.wgsize)),
+        Duplicated(deck.protein, d_protein),
+        Const(deck.ligand),
+        Const(deck.forcefield),
+        Const(deck.poses),
+        Duplicated(etotals, d_etotals)
+      )
+  else
+    @time fasten_main(
+      Val(convert(Int, params.wgsize)),
+      deck.protein,
+      deck.ligand,
+      deck.forcefield,
+      deck.poses,
+      etotals,
+    )
+  end
 
   if params.enzyme
-    d_protein = fill!(similar(deck.protein), Atom(0f0, 0f0, 0f0, 0))
-    d_etotals = fill!(similar(etotals), 0)
     elapsed = @elapsed for _ = 1:params.iterations
       autodiff(fasten_main, Const,
         Val(convert(Int, params.wgsize)),
