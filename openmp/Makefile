@@ -42,7 +42,7 @@ endif
 
 CC = $(CLANG_PATH)/clang
 
-CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme
+CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme -mllvm -enzyme-print
 
 LDFLAGS = -lm
 

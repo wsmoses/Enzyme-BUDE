@@ -123,7 +123,7 @@ void compute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__rest
   }
 }
 
-void onecompute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__restrict__ poses[6], float* __restrict__ buffer, FFParams* __restrict forcefield) {
+void onecompute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float *__restrict__* __restrict__ poses, float* __restrict__ buffer, FFParams* __restrict forcefield) {
     int npose = params.nposes;
 #pragma omp parallel for
     for (unsigned group = 0; group < (npose/WGSIZE); group++)
