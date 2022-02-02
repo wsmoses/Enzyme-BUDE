@@ -67,12 +67,11 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
       )
     end
   end
-
   
   (etotals, elapsed, params.wgsize)
 end
 
-@fastmath function fasten_main(
+@eval @fastmath function fasten_main(
   ::Val{WGSIZE},
   protein::AbstractArray{Atom},
   ligand::AbstractArray{Atom},
@@ -90,7 +89,7 @@ end
     etot = MArray{Tuple{WGSIZE}, Float32}(undef)
     transform = MArray{Tuple{WGSIZE, 3, 4},Float32}(undef)
 
-    @simd for i = 1:WGSIZE
+    for i = 1:WGSIZE
       ix = (group - 1) * (WGSIZE) + i
       @inbounds sx::Float32 = sin(poses[1, ix])
       @inbounds cx::Float32 = cos(poses[1, ix])
@@ -111,6 +110,7 @@ end
       @inbounds transform[i, 3, 3] = cx * cy
       @inbounds transform[i, 3, 4] = poses[6, ix]
       @inbounds etot[i] = Zero
+      $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
     end
 
     for il = 1:nligand
@@ -122,7 +122,7 @@ end
 
       lpos = MArray{Tuple{WGSIZE, 3}, Float32}(undef)
 
-      @simd for i = 1:WGSIZE
+      for i = 1:WGSIZE
         @inbounds lpos[i, 1] = (
           transform[i, 1, 4] +
           l_atom.x * transform[i, 1, 1] +
@@ -141,6 +141,7 @@ end
           l_atom.y * transform[i, 3, 2] +
           l_atom.z * transform[i, 3, 3]
         )
+        $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
       end
 
       for ip = 1:nprotein
@@ -167,7 +168,7 @@ end
         chrg_init::Float32 = l_params.elsc * p_params.elsc
         dslv_init::Float32 = p_hphb + l_hphb
 
-        @simd for i = 1:WGSIZE
+        for i = 1:WGSIZE
           @inbounds x::Float32 = lpos[i, 1] - p_atom.x
           @inbounds y::Float32 = lpos[i, 2] - p_atom.y
           @inbounds z::Float32 = lpos[i, 3] - p_atom.z
@@ -193,12 +194,14 @@ end
           dslv_e::Float32 = dslv_init * ((distbb < distdslv && phphb_nz) ? One : Zero)
           dslv_e *= (zone1 ? One : coeff)
           @inbounds etot[i] += dslv_e
+          $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
         end
       end
     end
-    @simd for i = 1:WGSIZE
+    for i = 1:WGSIZE
       ix = (group - 1) * WGSIZE + i
       @inbounds etotals[ix] = etot[i] * Half
+      $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
     end
   end
 end
