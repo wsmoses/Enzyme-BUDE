@@ -123,14 +123,20 @@ void compute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float*__rest
   }
 }
 
-void onecompute(Atom* __restrict__ protein, Atom* __restrict__ ligand, float *__restrict__* __restrict__ poses, float* __restrict__ buffer, FFParams* __restrict forcefield) {
+void onecompute(Atom* __restrict__ protein, Atom* __restrict__ ligand, 
+        float *__restrict__ pose0, 
+        float *__restrict__ pose1, 
+        float *__restrict__ pose2, 
+        float *__restrict__ pose3, 
+        float *__restrict__ pose4, 
+        float *__restrict__ pose5, 
+        float* __restrict__ buffer, FFParams* __restrict forcefield) {
     int npose = params.nposes;
 #pragma omp parallel for
     for (unsigned group = 0; group < (npose/WGSIZE); group++)
     {
       fasten_main(params.natlig, params.natpro, protein, ligand,
-                  poses[0], poses[1], poses[2],
-                  poses[3], poses[4], poses[5],
+                pose0, pose1, pose2, pose3, pose4, pose5,
                   buffer, forcefield, group);
     }
 }
@@ -197,7 +203,14 @@ void runOpenMP(float *restrict results)
 #ifdef FORWARD
 
   for (int itr = 0; itr < iters; itr++)
-    onecompute(protein, ligand, poses, buffer, forcefield);
+    onecompute(protein, ligand, 
+            poses[0],
+            poses[1],
+            poses[2],
+            poses[3],
+            poses[4],
+            poses[5],
+            buffer, forcefield);
 #else
   for (int itr = 0; itr < iters; itr++)
   __enzyme_autodiff((void*)onecompute,
@@ -206,7 +219,17 @@ void runOpenMP(float *restrict results)
                     enzyme_const,
                     ligand, 
                     enzyme_const,
-                    poses, 
+                    poses[0], 
+                    enzyme_const,
+                    poses[1], 
+                    enzyme_const,
+                    poses[2], 
+                    enzyme_const,
+                    poses[3], 
+                    enzyme_const,
+                    poses[4], 
+                    enzyme_const,
+                    poses[5], 
                     enzyme_dup,
                     buffer, d_buffer,
                     enzyme_const,

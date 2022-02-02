@@ -12,63 +12,17 @@
 #define NPNPDIST  5.5f
 #define NPPDIST   1.0f
 
-void fasten_main(const int natlig,
+void wrap(int il, float transform[3][4][WGSIZE] , const int natlig,
                  const int natpro,
                  const Atom *restrict protein,
                  const Atom *restrict ligand,
-                 const float *restrict transforms_0,
-                 const float *restrict transforms_1,
-                 const float *restrict transforms_2,
-                 const float *restrict transforms_3,
-                 const float *restrict transforms_4,
-                 const float *restrict transforms_5,
-                       float *restrict results,
-                 const FFParams *restrict forcefield,
-                 const int group)
-{
-  float transform[3][4][WGSIZE];
-  float etot[WGSIZE];
+                 const FFParams*__restrict forcefield,
+                 const int group, float * __restrict__ etot) {
 
-#pragma omp simd
-  for (int l = 0; l < WGSIZE; l++)
-  {
-    int ix = group*WGSIZE + l;
-
-    // Compute transformation matrix
-    const float sx = sinf(transforms_0[ix]);
-    const float cx = cosf(transforms_0[ix]);
-    const float sy = sinf(transforms_1[ix]);
-    const float cy = cosf(transforms_1[ix]);
-    const float sz = sinf(transforms_2[ix]);
-    const float cz = cosf(transforms_2[ix]);
-
-    transform[0][0][l] = cy*cz;
-    transform[0][1][l] = sx*sy*cz - cx*sz;
-    transform[0][2][l] = cx*sy*cz + sx*sz;
-    transform[0][3][l] = transforms_3[ix];
-    transform[1][0][l] = cy*sz;
-    transform[1][1][l] = sx*sy*sz + cx*cz;
-    transform[1][2][l] = cx*sy*sz - sx*cz;
-    transform[1][3][l] = transforms_4[ix];
-    transform[2][0][l] = -sy;
-    transform[2][1][l] = sx*cy;
-    transform[2][2][l] = cx*cy;
-    transform[2][3][l] = transforms_5[ix];
-
-    etot[l] = 0.f;
-  }
-
-  {
-    // Loop over ligand atoms
-    int il = 0;
-    do
-    {
-      // Load ligand atom data
       const Atom l_atom = ligand[il];
       const FFParams l_params = forcefield[l_atom.type];
       const int lhphb_ltz = l_params.hphb<0.f;
       const int lhphb_gtz = l_params.hphb>0.f;
-
       // Transform ligand atom
       float lpos_x[WGSIZE], lpos_y[WGSIZE], lpos_z[WGSIZE];
 
@@ -156,6 +110,69 @@ void fasten_main(const int natlig,
           etot[l]   += dslv_e;
         }
       } while (++ip < natpro); // loop over protein atoms
+
+}
+
+void fasten_main(const int natlig,
+                 const int natpro,
+                 const Atom *restrict protein,
+                 const Atom *restrict ligand,
+                 const float *restrict transforms_0,
+                 const float *restrict transforms_1,
+                 const float *restrict transforms_2,
+                 const float *restrict transforms_3,
+                 const float *restrict transforms_4,
+                 const float *restrict transforms_5,
+                       float *restrict results,
+                 const FFParams *restrict forcefield,
+                 const int group)
+{
+  float transform[3][4][WGSIZE];
+  float etot[WGSIZE];
+
+#pragma omp simd
+  for (int l = 0; l < WGSIZE; l++)
+  {
+    int ix = group*WGSIZE + l;
+
+    // Compute transformation matrix
+    const float sx = sinf(transforms_0[ix]);
+    const float cx = cosf(transforms_0[ix]);
+    const float sy = sinf(transforms_1[ix]);
+    const float cy = cosf(transforms_1[ix]);
+    const float sz = sinf(transforms_2[ix]);
+    const float cz = cosf(transforms_2[ix]);
+
+    transform[0][0][l] = cy*cz;
+    transform[0][1][l] = sx*sy*cz - cx*sz;
+    transform[0][2][l] = cx*sy*cz + sx*sz;
+    transform[0][3][l] = transforms_3[ix];
+    transform[1][0][l] = cy*sz;
+    transform[1][1][l] = sx*sy*sz + cx*cz;
+    transform[1][2][l] = cx*sy*sz - sx*cz;
+    transform[1][3][l] = transforms_4[ix];
+    transform[2][0][l] = -sy;
+    transform[2][1][l] = sx*cy;
+    transform[2][2][l] = cx*cy;
+    transform[2][3][l] = transforms_5[ix];
+
+    etot[l] = 0.f;
+  }
+
+  {
+    // Loop over ligand atoms
+    int il = 0;
+    do
+    {
+      // Load ligand atom data
+
+      wrap(il, transform,
+              natlig,
+                 natpro,
+                 protein,
+                 ligand,
+                 forcefield, group, etot);
+
     } while (++il < natlig); // loop over ligand atoms
   }
 

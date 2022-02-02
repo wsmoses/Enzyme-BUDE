@@ -42,7 +42,7 @@ endif
 
 CC = $(CLANG_PATH)/clang
 
-CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme -mllvm -enzyme-print
+CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme -mllvm -enzyme-print #-mllvm -enzyme-inline=1
 
 LDFLAGS = -lm
 
@@ -56,13 +56,13 @@ all: omp-single-forward.exe ser-single-forward.exe omp-single-gradient.exe ser-s
 # all: omp-single-forward.exe omp-single-gradient.exe
 
 ser-single-forward.exe: $(SOURCES2.0)
-	time $(CC) bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1
+	time $(CC) bude.c $(CFLAGS) -lm -o $@ -DFORWARD=1
 
 omp-single-forward.exe: $(SOURCES2.0)
 	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1
 
 ser-single-gradient.exe: $(SOURCES2.0)
-	time $(CC) bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB)
+	time $(CC) bude.c $(CFLAGS) -lm -o $@
 
 omp-single-gradient.exe: $(SOURCES2.0)
 	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB)
