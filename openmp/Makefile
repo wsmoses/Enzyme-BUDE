@@ -5,8 +5,11 @@ SHELL := bash
 
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
-ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
-CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin
+ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
+CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
+
+#ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/build13D/Enzyme/ClangEnzyme-13.so
+#CLANG_PATH ?= /mnt/sabrent/wmoses/llvm13/buildall/bin
 
 OPENMP_PATH ?= $(CLANG_PATH)/../projects/openmp/runtime/src
 MPI_PATH ?= /usr/lib/x86_64-linux-gnu/openmpi/include
@@ -42,7 +45,7 @@ endif
 
 CC = $(CLANG_PATH)/clang
 
-CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme -mllvm -enzyme-print -mllvm -enzyme-max-int-offset=1024 -mllvm -enzyme-max-type-offset=1024  #-mllvm -enzyme-inline=1
+CFLAGS   = -std=c99 -Wall -Ofast -ffast-math -$(ARCHFLAG)=$(ARCH) $(if $(AVX512),-mprefer-vector-width=512) -DWGSIZE=$(WGSIZE) -I $(OPENMP_PATH) -fno-exceptions -flegacy-pass-manager -Xclang -load -Xclang $(ENZYME_PATH) -Rpass=enzyme -mllvm -enzyme-print -mllvm -enzyme-max-int-offset=1024 -mllvm -enzyme-max-type-offset=1024  #-mllvm -enzyme-inline=1
 
 LDFLAGS = -lm
 
@@ -51,7 +54,7 @@ LDFLAGS = -lm
 
 .PHONY: all $(EXE) clean
 
-all: omp-single-forward.exe ser-single-forward.exe omp-single-gradient.exe ser-single-gradient.exe
+all: omp-single-forward.exe ser-single-forward.exe omp-single-gradient.exe ser-single-gradient.exe ompOpt-single-forward.exe ompOpt-single-gradient.exe
 
 # all: omp-single-forward.exe omp-single-gradient.exe
 
@@ -59,13 +62,19 @@ ser-single-forward.exe: $(SOURCES2.0)
 	time $(CC) bude.c $(CFLAGS) -lm -o $@ -DFORWARD=1
 
 omp-single-forward.exe: $(SOURCES2.0)
-	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1 -mllvm -enzyme-omp-opt=0 
 
 ser-single-gradient.exe: $(SOURCES2.0)
 	time $(CC) bude.c $(CFLAGS) -lm -o $@
 
 omp-single-gradient.exe: $(SOURCES2.0)
-	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=0 
+
+ompOpt-single-forward.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1 -mllvm -enzyme-omp-opt=1
+
+ompOpt-single-gradient.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=1
 
 clean:
 	rm -f *.exe
