@@ -3,7 +3,8 @@ using StaticArrays
 using Enzyme
 import Base.Experimental: @aliasscope
 
-Enzyme.API.printperf!(true)
+# Enzyme.API.printperf!(true)
+# Enzyme.API.printall!(true)
 
 const Device = (undef, "CPU", "Threaded")
 
@@ -34,6 +35,16 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
         Const(deck.poses),
         Duplicated(etotals, d_etotals)
       )
+      # args = (
+      #   Const(Val(convert(Int, params.wgsize))),
+      #   Duplicated(deck.protein, d_protein),
+      #   Const(deck.ligand),
+      #   Const(deck.forcefield),
+      #   Const(deck.poses),
+      #   Duplicated(etotals, d_etotals))
+      # tt′ = Tuple{map(Core.Typeof, args)...}
+      # forward, adjoint = Enzyme.Compiler.thunk(fasten_main, #=dfn=#nothing, Const, tt′, Val(Enzyme.API.DEM_ReverseModePrimal))
+      # forward(args...)
   else
     @time fasten_main(
       Val(convert(Int, params.wgsize)),
