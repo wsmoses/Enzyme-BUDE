@@ -11,6 +11,6 @@ dir = joinpath(dirname(dirname(Enzyme_path)), "deps")
 @info "Building Enzyme from inc"
 
 run(`$(Base.julia_cmd()) --project=$(dir) -e 'import Pkg; Pkg.instantiate()'`)
-run(`$(Base.julia_cmd()) --project=$(dir) $(dir)/build_local.jl --branch inc`)
+run(`$(Base.julia_cmd()) --project=$(dir) $(dir)/build_local.jl --branch vc/jl_inc`)
 
 cp(joinpath(dirname(dir), "LocalPreferences.toml"), "Threaded/LocalPreferences.toml", force=true)
