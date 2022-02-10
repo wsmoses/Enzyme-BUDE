@@ -12,6 +12,7 @@
 #define NPNPDIST  5.5f
 #define NPPDIST   1.0f
 
+__attribute__((always_inline))
 void wrap(int il, float transform[3][4][WGSIZE] , const int natlig,
                  const int natpro,
                  const Atom *restrict protein,
