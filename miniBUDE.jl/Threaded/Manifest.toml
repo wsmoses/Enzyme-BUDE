@@ -40,17 +40,17 @@ uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 
 [[Enzyme]]
 deps = ["Adapt", "CEnum", "Enzyme_jll", "GPUCompiler", "LLVM", "Libdl", "ObjectFile", "Test"]
-git-tree-sha1 = "a44db356255639af805fbbea43d13a54f106d27c"
+git-tree-sha1 = "4201826c05d6bd75bdfcfee77ce928353461ee5d"
 repo-rev = "main"
 repo-url = "https://github.com/wsmoses/Enzyme.jl.git"
 uuid = "7da242da-08ed-463a-9acd-ee780be4f1d9"
-version = "0.9.0-dev"
+version = "0.9.0"
 
 [[Enzyme_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "c15f7c12a894b5bc85d5a37866f9d0ab46a692ae"
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "Pkg"]
+git-tree-sha1 = "f39ca12b6a92553cd6dc44b9cac9d4c45daf16a1"
 uuid = "7cc45869-7501-5eee-bdea-0790c847d4ef"
-version = "0.0.26+1"
+version = "0.0.27+2"
 
 [[ExprTools]]
 git-tree-sha1 = "56559bbef6ca5ea0c0818fa5c90320398a6fbf8d"
@@ -59,9 +59,9 @@ version = "0.1.8"
 
 [[GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutputs", "UUIDs"]
-git-tree-sha1 = "abd824e1f2ecd18d33811629c781441e94a24e81"
+git-tree-sha1 = "9dc3ca1377802497614521b4aad91d0a5051072c"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "0.13.11"
+version = "0.13.13"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]
@@ -69,9 +69,9 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[JLLWrappers]]
 deps = ["Preferences"]
-git-tree-sha1 = "22df5b96feef82434b07327e2d3c770a9b21e023"
+git-tree-sha1 = "abc9885a7ca2052a736a600f7fa66209f96506e1"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.4.0"
+version = "1.4.1"
 
 [[LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Printf", "Unicode"]
@@ -81,9 +81,13 @@ version = "4.7.1"
 
 [[LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "62115afed394c016c2d3096c5b85c407b48be96b"
+git-tree-sha1 = "67cc5406b15bd04ff72a45f628bec61d36078908"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.13+1"
+version = "0.0.13+3"
+
+[[LazyArtifacts]]
+deps = ["Artifacts", "Pkg"]
+uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -188,9 +192,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "2884859916598f974858ff01df7dfc6c708dd895"
+git-tree-sha1 = "95c6a5d0e8c69555842fc4a927fc485040ccc31c"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.3.3"
+version = "1.3.5"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

@@ -3,8 +3,8 @@ using StaticArrays
 using Enzyme
 import Base.Experimental: @aliasscope
 
-# Enzyme.API.printperf!(true)
-# Enzyme.API.printall!(true)
+Enzyme.API.printperf!(true)
+Enzyme.API.printall!(true)
 
 const Device = (undef, "CPU", "Threaded")
 
@@ -99,6 +99,9 @@ end
   numGroups::Int = nposes ÷ WGSIZE
 
   function inner(group)
+  end
+
+  Threads.@threads for group = 1:numGroups
     nligand::Int = length(ligand)
     nprotein::Int = length(protein)
     etot = MArray{Tuple{WGSIZE}, Float32}(undef)
@@ -129,9 +132,7 @@ end
       # $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
     end
 
-    function inner_ligand(il, transform)
-      l_etot = zero(MArray{Tuple{WGSIZE}, Float32})
-
+    for il = 1:nligand
       @inbounds l_atom::Atom = ligand[il]
 
       @inbounds l_params::FFParams = forcefield[l_atom.type+1]
@@ -200,27 +201,23 @@ end
           zone1::Bool = (distbb < Zero)
 
           # Calculate steric energy
-          @inbounds l_etot[i] += (One - (distij * r_radij)) * (zone1 ? Two * Hardness : Zero)
+          @inbounds etot[i] += (One - (distij * r_radij)) * (zone1 ? Two * Hardness : Zero)
 
           # Calculate formal and dipole charge interactions
           chrg_e::Float32 =
             chrg_init * ((zone1 ? One : (One - distbb * elcdst1)) * (distbb < elcdst ? One : Zero))
           neg_chrg_e::Float32 = -abs(chrg_e)
           chrg_e = type_E ? neg_chrg_e : chrg_e
-          @inbounds l_etot[i] += chrg_e * Cnstnt
+          @inbounds etot[i] += chrg_e * Cnstnt
 
           # Calculate the two cases for Nonpolar-Polar repulsive interactions
           coeff::Float32 = (One - (distbb * r_distdslv))
           dslv_e::Float32 = dslv_init * ((distbb < distdslv && phphb_nz) ? One : Zero)
           dslv_e *= (zone1 ? One : coeff)
-          @inbounds l_etot[i] += dslv_e
+          @inbounds etot[i] += dslv_e
           # $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
         end
       end
-      return SArray(l_etot)
-    end
-    for il = 1:nligand
-      etot .+= inner_ligand(il, SArray(transform))
     end
     @simd ivdep for i = 1:WGSIZE
     # for i = 1:WGSIZE
@@ -228,10 +225,6 @@ end
       @inbounds etotals[ix] = etot[i] * Half
       # $(Expr(:loopinfo, Symbol("julia.simdloop"), (Symbol("llvm.loop.unroll.full"),)))
     end
-  end
-
-  Threads.@threads for group = 1:numGroups
-    inner(group)
   end
 end
 
