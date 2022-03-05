@@ -5,11 +5,11 @@ SHELL := bash
 
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
+ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-15.so
+CLANG_PATH ?= /home/ubuntu/omp-llvm/build/bin
+
 # ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
 # CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
-
-ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/build/Enzyme/ClangEnzyme-14.so
-CLANG_PATH ?= /home/ubuntu/llvm-project/build/bin
 
 # ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/buildD/Enzyme/ClangEnzyme-14.so
 # CLANG_PATH ?= /home/ubuntu/llvm-project/buildD/bin
