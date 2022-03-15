@@ -1,6 +1,7 @@
 include("BUDE.jl")
 using StaticArrays
 using Enzyme
+using FiniteDifferences
 import Base.Experimental: @aliasscope
 
 # Enzyme.API.printperf!(true)
@@ -27,6 +28,7 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
   d_etotals = fill!(similar(etotals), 0)
   # warmup
   if params.enzyme
+     d_etotals[1] = 1
      @time autodiff(fasten_main, Const,
         Val(convert(Int, params.wgsize)),
         Duplicated(deck.protein, d_protein),
@@ -35,16 +37,27 @@ function run(params::Params, deck::Deck, _::DeviceWithRepr)
         Const(deck.poses),
         Duplicated(etotals, d_etotals)
       )
-      # args = (
-      #   Const(Val(convert(Int, params.wgsize))),
-      #   Duplicated(deck.protein, d_protein),
-      #   Const(deck.ligand),
-      #   Const(deck.forcefield),
-      #   Const(deck.poses),
-      #   Duplicated(etotals, d_etotals))
-      # tt′ = Tuple{map(Core.Typeof, args)...}
-      # forward, adjoint = Enzyme.Compiler.thunk(fasten_main, #=dfn=#nothing, Const, tt′, Val(Enzyme.API.DEM_ReverseModePrimal))
-      # forward(args...)
+      if params.verify
+       
+        etotals0 = Array{Float32}(undef, poses)
+	fasten_main(
+	      Val(convert(Int, params.wgsize)),
+	      deck.protein,
+	      deck.ligand,
+	      deck.forcefield,
+	      deck.poses,
+	      etotals0,
+       )
+        function fwdwrap(x)
+           tmp = copy(deck.protein)
+	   tmp[13] = Atom(x, tmp[13].y, tmp[13].z, tmp[13].type)
+	   fetotals = Array{Float32}(undef, poses)
+           fasten_main(Val(convert(Int, params.wgsize)), tmp, deck.ligand, deck.forcefield, deck.poses, fetotals)
+           fetotals[1]
+        end
+	fd = FiniteDifferences.central_fdm(5, 1)(fwdwrap, deck.protein[13].x)
+	@show d_protein[13], fd
+      end
   else
     @time fasten_main(
       Val(convert(Int, params.wgsize)),

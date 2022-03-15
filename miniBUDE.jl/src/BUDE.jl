@@ -70,6 +70,7 @@ end
   ppwi::UInt = DefaultPPWI
   deck::String = "../data/bm1"
   enzyme::Bool = false
+  verify::Bool = false
 end
 
 struct Deck
@@ -113,6 +114,10 @@ function parse_options(given::Params)
     default = given.deck
     "--enzyme"
     help = "Use the enzyme"
+    arg_type = Bool
+    default = false
+    "--verify"
+    help = "Verify derivatives"
     arg_type = Bool
     default = false
   end
