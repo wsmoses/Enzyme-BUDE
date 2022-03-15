@@ -3,8 +3,8 @@ using StaticArrays
 using Enzyme
 import Base.Experimental: @aliasscope
 
-Enzyme.API.printperf!(true)
-Enzyme.API.printall!(true)
+# Enzyme.API.printperf!(true)
+# Enzyme.API.printall!(true)
 
 const Device = (undef, "CPU", "Threaded")
 
