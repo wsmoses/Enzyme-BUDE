@@ -158,6 +158,13 @@ void runOpenMP(float *restrict results)
 #ifndef FORWARD
   float    *restrict d_buffer = calloc(sizeof(float), params.nposes);
 #endif
+#ifdef VERIFY
+  Atom     *restrict d_protein_pls = calloc(sizeof(Atom), params.natpro);
+  Atom     *restrict d_protein_mns = calloc(sizeof(Atom), params.natpro);
+  float    *restrict d_buffer_pls = malloc(sizeof(float) * params.nposes);
+  float    *restrict d_buffer_mns = malloc(sizeof(float) * params.nposes);
+  float eps = 1e-2;
+#endif
 
   for(int p = 0; p < 6; p++){
     poses[p] = malloc(sizeof(float) * params.nposes);
@@ -211,7 +218,48 @@ void runOpenMP(float *restrict results)
             poses[4],
             poses[5],
             buffer, forcefield);
+
+#ifdef VERIFY
+  double checksum_finitediff = 0.0;
+  for(int i = 0; i < params.nposes; i++){
+    d_buffer_pls[i] = 0.f;
+    d_buffer_mns[i] = 0.f;
+  }
+
+  for(int i = 0; i < params.natpro; i++){
+    d_protein_pls[i] = params.protein[i];
+    d_protein_mns[i] = params.protein[i];
+
+    d_protein_pls[i].x = params.protein[i].x + eps;
+    d_protein_pls[i].y = params.protein[i].y + eps;
+    d_protein_pls[i].z = params.protein[i].z + eps;
+    d_protein_mns[i].x = params.protein[i].x - eps;
+    d_protein_mns[i].y = params.protein[i].y - eps;
+    d_protein_mns[i].z = params.protein[i].z - eps;
+  }
+  for (int itr = 0; itr < iters; itr++) {
+    onecompute(d_protein_pls, ligand, poses[0], poses[1], poses[2], poses[3], poses[4], poses[5], d_buffer_pls, forcefield);
+    onecompute(d_protein_mns, ligand, poses[0], poses[1], poses[2], poses[3], poses[4], poses[5], d_buffer_mns, forcefield);
+  }
+  for(int i=0; i<params.nposes; i++) {
+    //printf("Dir %d diff %f\n",i, (d_buffer_pls[i] - d_buffer_mns[i])/(2.0*eps));
+    checksum_finitediff += (d_buffer_pls[i] - d_buffer_mns[i])/(2.0*eps);
+  }
+  printf("==========\nFinite Differences Checksum: %f\n",checksum_finitediff);
+#endif
 #else
+  for (int itr = 0; itr < iters; itr++)
+    onecompute(protein, ligand, 
+            poses[0],
+            poses[1],
+            poses[2],
+            poses[3],
+            poses[4],
+            poses[5],
+            buffer, forcefield);
+  for(int i=0; i<params.nposes; i++) {
+    d_buffer[i] = 1.0;
+  }
   for (int itr = 0; itr < iters; itr++)
   __enzyme_autodiff((void*)onecompute,
                     enzyme_dup,
@@ -235,6 +283,14 @@ void runOpenMP(float *restrict results)
                     enzyme_const,
                     forcefield
                     );
+#ifdef VERIFY
+  double checksum_enzyme = 0.0;
+  for(int i=0; i<params.natpro; i++) {
+    //printf("Atom %d grad %f %f %f\n",i,d_protein[i].x,d_protein[i].y,d_protein[i].z);
+    checksum_enzyme += d_protein[i].x + d_protein[i].y + d_protein[i].z;
+  }
+  printf("==========\nEnzyme Gradient Checksum: %f\n",checksum_enzyme);
+#endif
 #endif
   double end = getTimestamp();
 
