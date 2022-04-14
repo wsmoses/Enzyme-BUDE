@@ -5,8 +5,8 @@ SHELL := bash
 
 MAKEFLAGS += --warn-undefined-variables --no-builtin-rules
 
-ENZYME_PATH ?= /home/ubuntu/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-15.so
-CLANG_PATH ?= /home/ubuntu/omp-llvm/build/bin
+ENZYME_PATH ?= /home/jhuckelheim/enzyme-sc22/Enzyme/enzyme/build/Enzyme/ClangEnzyme-15.so
+CLANG_PATH ?= /home/jhuckelheim/enzyme-sc22/llvm-project/build/bin
 
 # ENZYME_PATH ?= /home/wmoses/git/Enzyme/enzyme/buildomp/Enzyme/ClangEnzyme-14.so
 # CLANG_PATH ?= /mnt/sabrent/wmoses/omp-llvm/build/bin
@@ -63,6 +63,11 @@ LDFLAGS = -lm
 
 all: omp-single-forward.exe ser-single-forward.exe omp-single-gradient.exe ser-single-gradient.exe ompOpt-single-forward.exe ompOpt-single-gradient.exe
 
+verify: omp-single-forward-verify.exe omp-single-gradient-verify.exe ompOpt-single-gradient-verify.exe
+	./ompOpt-single-gradient-verify.exe | grep Checksum
+	./omp-single-gradient-verify.exe | grep Checksum
+	./omp-single-forward-verify.exe | grep Checksum
+
 # all: omp-single-forward.exe omp-single-gradient.exe
 
 ser-single-forward.exe: $(SOURCES2.0)
@@ -71,8 +76,14 @@ ser-single-forward.exe: $(SOURCES2.0)
 omp-single-forward.exe: $(SOURCES2.0)
 	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1 -mllvm -enzyme-omp-opt=0 
 
+omp-single-forward-verify.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -DFORWARD=1 -mllvm -enzyme-omp-opt=0 -DVERIFY=1
+
 ser-single-gradient.exe: $(SOURCES2.0)
 	time $(CC) bude.c $(CFLAGS) -lm -o $@
+
+omp-single-gradient-verify.exe: $(SOURCES2.0)
+	$(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=0 -g -DVERIFY=1
 
 omp-single-gradient.exe: $(SOURCES2.0)
 	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=0 
@@ -82,6 +93,9 @@ ompOpt-single-forward.exe: $(SOURCES2.0)
 
 ompOpt-single-gradient.exe: $(SOURCES2.0)
 	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=1
+
+ompOpt-single-gradient-verify.exe: $(SOURCES2.0)
+	time $(CC) -fopenmp bude.c $(CFLAGS) -lm -o $@ $(OPENMP_LIB) -mllvm -enzyme-omp-opt=1 -DVERIFY=1
 
 clean:
 	rm -f *.exe
