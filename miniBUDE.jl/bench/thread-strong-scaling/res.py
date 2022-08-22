@@ -7,7 +7,7 @@ def printfun(numthreads, itercount,mode):
      os.system("sed -i \"s/- Average time:   //g\" results.txt")
      os.system("sed -i \"s/ ms//g\" results.txt")
 
-os.system("rm results.txt")
+os.system("rm -f results.txt")
 itercount=8
 #Strong scaling
 for mode in ["-false","-true"]:

@@ -9,7 +9,7 @@ def printfun(numthreads, blocklist,itercount,mode):
      os.system("sed -i \"s/ ms//g\" results.txt")
 
 itercount=100
-os.system("rm results.txt")
+os.system("rm -f results.txt")
 #Strong scaling
 for mode in ["-forward","-gradient"]:
   for numthreads in [1,8,16,24,32,40,48,56,64]:
